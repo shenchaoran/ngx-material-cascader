@@ -42,8 +42,11 @@ import { cloneDeep, map } from 'lodash';
   ],
 })
 export class MatCascaderComponent extends NgModelBase implements OnInit, AfterViewInit, OnChanges {
+  _data: IMatCascader[] = [];
   @Input()
-  data: IMatCascader[] = [];
+  set data(v: IMatCascader[]) { this._data = cloneDeep(v); }
+  get data() { return this._data; }
+
   @Input()
   onlyLeaf = true;
 
@@ -52,13 +55,9 @@ export class MatCascaderComponent extends NgModelBase implements OnInit, AfterVi
     return this._innerValue;
   }
   set value(nV) {
-    if (this._innerValue !== nV) {
-      if (!this._innerValue)
-        this._innerValue = [];
-      this._innerValue.splice(0);
-      map(nV, v => this._innerValue.push(v))
-      this.propagateChange(this._innerValue);
-      this.valueChange.emit(nV);
+    if (nV !== this._innerValue) {
+      this._innerValue = nV;
+      this._innerValue$.next(nV);
     }
   }
   @Output()
@@ -82,14 +81,17 @@ export class MatCascaderComponent extends NgModelBase implements OnInit, AfterVi
     private _matCascaderService: MatCascaderService,
   ) {
     super();
+    this._innerValue$.subscribe(v => {
+      if (!!v) {
+          this._initContainers();
+          setTimeout(() => {
+              this._initRefs();
+          });
+      }
+  });
   }
 
-
-
-  ngOnInit() {
-    this._initContainers();
-    this._innerValue$.subscribe(v => this._initContainers());
-  }
+  ngOnInit() {}
 
   ngAfterViewInit() {
     this._initRefs();
@@ -149,7 +151,16 @@ export class MatCascaderComponent extends NgModelBase implements OnInit, AfterVi
   }
 
   private _setValueOfPath(menu: IMatCascaderView): void {
-    this.value = this._getValueByMenu(menu).reverse();
+    let nV = this._getValueByMenu(menu).reverse();
+    if (this._innerValue !== nV) {
+      if (!this._innerValue)
+          this._innerValue = [];
+      this._innerValue.splice(0);
+      map(nV, item => this._innerValue.push(item));
+      this.propagateChange(this._innerValue);
+      this.valueChange.emit(this._innerValue);
+    }
+
     this.valueText = this._getValueTextByMenu(menu);
   }
 
@@ -159,7 +170,6 @@ export class MatCascaderComponent extends NgModelBase implements OnInit, AfterVi
       const text = this._getTextByValue(this.data, value);
       this.valueText = this._getValueTextByTexts(text);
     }
-
   }
 
   private _getTextByValue(data: IMatCascader[], value: (string | number)[]): string[] {

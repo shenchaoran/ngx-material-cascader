@@ -8,8 +8,8 @@ export class NgModelBase implements ControlValueAccessor {
 
   set value(v: any) {
     if (v !== this._innerValue) {
-      this._innerValue = v
-      this.propagateChange(v)
+      this._innerValue = v;
+      this.propagateChange(v);
     }
   }
 
@@ -28,7 +28,5 @@ export class NgModelBase implements ControlValueAccessor {
     this.propagateChange = fn;
   }
 
-  registerOnTouched(fn: any) {
-    this.propagateChange = fn;
-  }
+  registerOnTouched(fn: any) {}
 }
